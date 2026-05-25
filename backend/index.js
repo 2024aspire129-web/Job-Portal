@@ -17,21 +17,27 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-const envOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : [];
+
+const normalizeOrigin = (origin) => origin?.trim().replace(/\/$/, "");
+
+const envOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map(normalizeOrigin)
+  .filter(Boolean)
+  .flatMap((origin) => (origin.startsWith("http") ? [origin] : [`https://${origin}`, `http://${origin}`]));
 
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5174",
+  "https://job-portal-woad-six-61.vercel.app",
   ...envOrigins,
 ];
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
