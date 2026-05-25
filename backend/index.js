@@ -7,6 +7,7 @@ import userRoute from "./routes/user.route.js";
 import companyRoute from "./routes/company.route.js";
 import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
+import mongoose from "mongoose";
 
 dotenv.config({});
 
@@ -46,13 +47,28 @@ app.get("/", (_req, res) => {
   res.status(200).json({ message: "Job Portal API is running", success: true });
 });
 
+app.get("/health", (_req, res) => {
+  const isDatabaseConnected = mongoose.connection.readyState === 1;
+
+  res.status(isDatabaseConnected ? 200 : 503).json({
+    success: isDatabaseConnected,
+    api: "running",
+    database: isDatabaseConnected ? "connected" : "disconnected",
+  });
+});
+
 // api's
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 
-app.listen(PORT, () => {
-  connectDB();
-  console.log(`Server running at port ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at port ${PORT}`);
+    });
+  })
+  .catch(() => {
+    process.exit(1);
+  });
